@@ -125,9 +125,23 @@ export default function SongbookViewPage() {
                 {songbookSong.song?.artist || 'Unknown Artist'}
               </p>
             </div>
-            <div className="whitespace-pre-wrap font-mono text-sm bg-gray-50 p-4 rounded-lg">
-              {songbookSong.song?.chords_data?.content || 'No content available'}
-            </div>
+            {songbookSong.song?.ultimate_guitar_url ? (
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <p className="text-sm text-gray-600 mb-2">View on Ultimate Guitar:</p>
+                <a
+                  href={songbookSong.song.ultimate_guitar_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline break-all"
+                >
+                  {songbookSong.song.ultimate_guitar_url}
+                </a>
+              </div>
+            ) : (
+              <div className="bg-gray-50 p-4 rounded-lg text-gray-500">
+                No URL available
+              </div>
+            )}
           </div>
         ))}
       </div>

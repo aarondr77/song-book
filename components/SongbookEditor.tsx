@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import SongSearch from './SongSearch'
+import SongUrlInput from './SongUrlInput'
 import SongList from './SongList'
-import { UltimateGuitarSearchResult, SongbookSong, Song } from '@/lib/types'
+import { SongbookSong, Song } from '@/lib/types'
 
 interface SongbookEditorProps {
   songbookId?: string
@@ -45,7 +45,7 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
     }
   }
 
-  const handleSelectSong = async (searchResult: UltimateGuitarSearchResult) => {
+  const handleAddSong = async (url: string) => {
     setLoading(true)
     setError(null)
 
@@ -57,13 +57,14 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ultimate_guitar_id: searchResult.id,
+          ultimate_guitar_url: url,
           songbook_id: songbookId,
         }),
       })
 
       if (!fetchResponse.ok) {
-        throw new Error('Failed to fetch song')
+        const errorData = await fetchResponse.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to add song')
       }
 
       const song: Song = await fetchResponse.json()
@@ -84,8 +85,9 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
         await loadSongbook()
       }
     } catch (err) {
-      setError('Failed to add song. Please try again.')
-      console.error(err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add song. Please try again.'
+      setError(errorMessage)
+      throw err // Re-throw so SongUrlInput can handle it
     } finally {
       setLoading(false)
     }
@@ -252,7 +254,7 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
 
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-4">Add Songs</h2>
-        <SongSearch onSelectSong={handleSelectSong} />
+        <SongUrlInput onAddSong={handleAddSong} />
       </div>
 
       <div className="mb-6">

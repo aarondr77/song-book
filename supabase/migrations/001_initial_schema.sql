@@ -3,8 +3,9 @@ CREATE TABLE IF NOT EXISTS songs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   artist TEXT NOT NULL,
-  ultimate_guitar_id INTEGER UNIQUE NOT NULL,
-  chords_data JSONB NOT NULL,
+  ultimate_guitar_id INTEGER,
+  ultimate_guitar_url TEXT,
+  chords_data JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -27,7 +28,7 @@ CREATE TABLE IF NOT EXISTS songbook_songs (
 );
 
 -- Create indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_songs_ultimate_guitar_id ON songs(ultimate_guitar_id);
+CREATE INDEX IF NOT EXISTS idx_songs_ultimate_guitar_url ON songs(ultimate_guitar_url);
 CREATE INDEX IF NOT EXISTS idx_songbook_songs_songbook_id ON songbook_songs(songbook_id);
 CREATE INDEX IF NOT EXISTS idx_songbook_songs_position ON songbook_songs(songbook_id, position);
 

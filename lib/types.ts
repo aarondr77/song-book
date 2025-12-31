@@ -2,8 +2,9 @@ export interface Song {
   id: string
   title: string
   artist: string
-  ultimate_guitar_id: number
-  chords_data: any
+  ultimate_guitar_id?: number | null
+  ultimate_guitar_url?: string | null
+  chords_data?: any | null
   created_at: string
 }
 
@@ -21,20 +22,5 @@ export interface SongbookSong {
   position: number
   created_at: string
   song?: Song
-}
-
-export interface UltimateGuitarSearchResult {
-  id: number
-  song_name: string
-  artist_name: string
-  type: string
-}
-
-export interface UltimateGuitarTab {
-  id: number
-  song_name: string
-  artist_name: string
-  content: string
-  type: string
 }
 

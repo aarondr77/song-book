@@ -20,8 +20,7 @@ For local testing, see [LOCAL_SETUP.md](LOCAL_SETUP.md) for detailed instruction
 2. Start local Supabase: `npm run supabase:start` (copy the API URL and keys)
 3. Create `.env.local` with the local Supabase credentials
 4. Run migration: `npm run supabase:reset`
-5. Start Go service: `cd go-service && go run .`
-6. Start Next.js: `npm run dev`
+5. Start Next.js: `npm run dev`
 
 ## Production Setup
 
@@ -35,7 +34,7 @@ npm install
 cp .env.local.example .env.local
 ```
 
-Fill in your Supabase credentials and Go service URL.
+Fill in your Supabase credentials.
 
 3. Run the development server:
 ```bash
@@ -47,7 +46,6 @@ npm run dev
 - `app/` - Next.js app router pages
 - `components/` - React components
 - `lib/` - Utility functions and types
-- `go-service/` - Go HTTP service for Ultimate Guitar scraping
 - `supabase/migrations/` - Database migrations
 
 ## Database Setup
@@ -58,14 +56,6 @@ npm run dev
 
 ## Deployment
 
-### Go Service (Railway)
-
-1. Create a Railway account at https://railway.app
-2. Create a new project and connect your repository
-3. Select the `go-service` directory as the root
-4. Railway will automatically detect the Dockerfile and deploy
-5. Copy the deployment URL (e.g., `https://your-service.railway.app`)
-
 ### Next.js App (Vercel or Railway)
 
 1. Deploy to Vercel:
@@ -73,12 +63,11 @@ npm run dev
    - Set environment variables:
      - `NEXT_PUBLIC_SUPABASE_URL`
      - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-     - `GO_SERVICE_URL` (your Railway Go service URL)
    - Deploy
 
 2. Or deploy to Railway:
    - Create a new service in your Railway project
-   - Select the root directory (not go-service)
+   - Select the root directory
    - Set the same environment variables
    - Deploy
 

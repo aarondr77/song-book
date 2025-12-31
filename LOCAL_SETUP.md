@@ -6,9 +6,6 @@ This guide will help you test the application locally before deploying to produc
 
 - Node.js 18+ installed
 - Docker Desktop installed (for local Supabase)
-- Go 1.21+ installed (for local Go service, optional - see INSTALL_GO.md)
-
-**Note:** If you don't want to install Go locally, you can deploy the Go service to Railway first and use that URL instead.
 
 ## Option 1: Local Supabase (Recommended)
 
@@ -101,7 +98,6 @@ Then fill it in with:
 ```
 NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key-from-supabase-start>
-GO_SERVICE_URL=http://localhost:8080
 ```
 
 ### 5. Run Database Migration
@@ -120,29 +116,7 @@ supabase db reset
 
 This will apply all migrations.
 
-## Option 2: Run Go Service Locally
-
-### 1. Navigate to Go Service Directory
-
-```bash
-cd go-service
-```
-
-### 2. Install Dependencies
-
-```bash
-go mod download
-```
-
-### 3. Run the Service
-
-```bash
-go run .
-```
-
-The service will start on http://localhost:8080
-
-## Option 3: Run Next.js App
+## Option 2: Run Next.js App
 
 ### 1. Install Dependencies
 
@@ -161,17 +135,11 @@ The app will be available at http://localhost:3000
 ## Testing the Full Stack
 
 1. Make sure Supabase is running (`supabase start`)
-2. Make sure Go service is running (`cd go-service && go run .`)
-3. Make sure Next.js app is running (`npm run dev`)
-4. Open http://localhost:3000 in your browser
-5. Try creating a songbook and searching for songs!
+2. Make sure Next.js app is running (`npm run dev`)
+3. Open http://localhost:3000 in your browser
+4. Try creating a songbook and adding songs by pasting Ultimate Guitar URLs!
 
 ## Troubleshooting
-
-### Go Service Not Starting
-- Make sure Go is installed: `go version`
-- Make sure port 8080 is not in use
-- Check that `go.mod` dependencies are installed
 
 ### Supabase Connection Issues
 - Make sure Docker is running
@@ -188,9 +156,6 @@ The app will be available at http://localhost:3000
 ```bash
 # Stop Supabase
 supabase stop
-
-# Stop Go service
-# Just press Ctrl+C in the terminal where it's running
 
 # Stop Next.js
 # Just press Ctrl+C in the terminal where it's running

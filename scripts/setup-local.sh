@@ -71,7 +71,6 @@ if [ -n "$SUPABASE_INFO" ]; then
             cat > .env.local << EOF
 NEXT_PUBLIC_SUPABASE_URL=$API_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
-GO_SERVICE_URL=http://localhost:8080
 EOF
         fi
         
@@ -106,31 +105,9 @@ echo ""
 echo "✅ Setup complete!"
 echo ""
 
-# Check if Go is installed
-if ! command -v go &> /dev/null; then
-    echo "⚠️  Go is not installed. You'll need it to run the Go service locally."
-    echo ""
-    echo "   Install Go:"
-    echo "   - macOS: brew install go"
-    echo "   - Or download from: https://go.dev/dl/"
-    echo ""
-    echo "   Alternatively, you can deploy the Go service to Railway first"
-    echo "   and use that URL in GO_SERVICE_URL in .env.local"
-    echo ""
-else
-    echo "✅ Go is installed"
-fi
-
 echo "📋 Next steps:"
 echo "1. Verify .env.local has the correct Supabase credentials"
-if command -v go &> /dev/null; then
-    echo "2. Start Go service (in another terminal):"
-    echo "   cd go-service && go run ."
-    echo "3. Start Next.js app:"
-else
-    echo "2. Install Go (see above) or deploy Go service to Railway"
-    echo "3. Start Next.js app:"
-fi
+echo "2. Start Next.js app:"
 echo "   npm install && npm run dev"
 echo ""
 echo "🌐 Supabase Studio: http://localhost:54323"
