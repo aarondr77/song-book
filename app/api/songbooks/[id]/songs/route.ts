@@ -76,6 +76,13 @@ export async function PUT(
       )
     }
 
+    // Validate that all songs have song_id
+    const invalidSongs = songs.filter((s: any) => !s.song_id || s.song_id === '')
+    if (invalidSongs.length > 0) {
+      console.error('Invalid songs in reorder request:', invalidSongs)
+      console.error('Full songs array:', songs)
+    }
+
     // Delete existing songbook_songs entries
     const { error: deleteError } = await supabase
       .from('songbook_songs')
@@ -91,11 +98,21 @@ export async function PUT(
     }
 
     // Insert new songbook_songs entries
-    const songbookSongs = songs.map((s: any) => ({
-      songbook_id: params.id,
-      song_id: s.song_id,
-      position: s.position,
-    }))
+    // Filter out any entries with null/undefined song_id
+    const songbookSongs = songs
+      .filter((s: any) => s.song_id != null && s.song_id !== '')
+      .map((s: any) => ({
+        songbook_id: params.id,
+        song_id: s.song_id,
+        position: s.position,
+      }))
+
+    if (songbookSongs.length === 0) {
+      return NextResponse.json(
+        { error: 'No valid songs to update' },
+        { status: 400 }
+      )
+    }
 
     const { data, error } = await supabase
       .from('songbook_songs')

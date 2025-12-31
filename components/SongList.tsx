@@ -20,18 +20,26 @@ export default function SongList({ songs, onRemove, onReorder }: SongListProps) 
     e.preventDefault()
     if (draggedIndex === null) return
 
+    if (draggedIndex === null) return
+
     if (draggedIndex !== index) {
       const newSongs = [...songs]
       const draggedSong = newSongs[draggedIndex]
       newSongs.splice(draggedIndex, 1)
       newSongs.splice(index, 0, draggedSong)
       
-      const reordered = newSongs.map((song, idx) => ({
-        song_id: song.song_id,
-        position: idx,
-      }))
+      // Filter out any songs without a valid song_id and create reordered array
+      const reordered = newSongs
+        .filter((song) => song.song_id != null && song.song_id !== '')
+        .map((song, idx) => ({
+          song_id: song.song_id,
+          position: idx,
+        }))
       
-      onReorder(reordered)
+      // Only call onReorder if we have valid songs
+      if (reordered.length > 0) {
+        onReorder(reordered)
+      }
       setDraggedIndex(index)
     }
   }
