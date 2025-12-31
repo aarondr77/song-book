@@ -44,7 +44,16 @@ if [ -n "$ANON_KEY" ]; then
     echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
 fi
 
+# Extract service role key
+SERVICE_ROLE_KEY=$(echo "$STATUS" | grep -A 1 "service_role key" | tail -1 | xargs)
+if [ -n "$SERVICE_ROLE_KEY" ]; then
+    echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+fi
+
 echo ""
 echo "📝 Add these to your .env.local file"
+echo ""
+echo "⚠️  Note: SUPABASE_SERVICE_ROLE_KEY is required for file uploads"
+echo "   (it bypasses Row Level Security policies)"
 echo ""
 

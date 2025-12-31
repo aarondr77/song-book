@@ -14,6 +14,9 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null)
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [songs, setSongs] = useState<SongbookSong[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -36,6 +39,8 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
       const data = await response.json()
       setTitle(data.title)
       setDescription(data.description || '')
+      setCoverImageUrl(data.cover_image_url || null)
+      setCoverImagePreview(data.cover_image_url || null)
       setSongs(data.songs || [])
     } catch (err) {
       setError('Failed to load songbook')
@@ -148,6 +153,67 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
     }
   }
 
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true)
+    setError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to upload image')
+      }
+
+      const data = await response.json()
+      setCoverImageUrl(data.url)
+      setCoverImagePreview(data.url)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload image'
+      setError(errorMessage)
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file')
+        return
+      }
+
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB')
+        return
+      }
+
+      // Show preview immediately
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setCoverImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+
+      // Upload the file
+      handleImageUpload(file)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setCoverImageUrl(null)
+    setCoverImagePreview(null)
+  }
+
   const handleSave = async () => {
     if (!title.trim()) {
       setError('Title is required')
@@ -167,7 +233,7 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ title, description }),
+          body: JSON.stringify({ title, description, cover_image_url: coverImageUrl }),
         })
 
         if (!response.ok) throw new Error('Failed to update songbook')
@@ -177,7 +243,7 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ title, description }),
+          body: JSON.stringify({ title, description, cover_image_url: coverImageUrl }),
         })
 
         if (!response.ok) throw new Error('Failed to create songbook')
@@ -249,6 +315,54 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
             placeholder="Enter songbook description (optional)"
             rows={3}
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">Cover Image</label>
+          {coverImagePreview ? (
+            <div className="mb-4">
+              <img
+                src={coverImagePreview}
+                alt="Cover preview"
+                className="max-w-xs max-h-48 object-cover rounded-lg border border-gray-300 mb-2"
+              />
+              <div className="flex gap-2">
+                <label className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
+                  {uploadingImage ? 'Uploading...' : 'Change Image'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    disabled={uploadingImage}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  Remove Image
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer inline-block">
+                {uploadingImage ? 'Uploading...' : 'Upload Cover Image'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                  disabled={uploadingImage}
+                />
+              </label>
+              <p className="text-sm text-gray-500 mt-2">
+                Upload an image to use as the cover for this songbook (max 5MB)
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

@@ -12,6 +12,7 @@ export interface Songbook {
   id: string
   title: string
   description: string | null
+  cover_image_url: string | null
   created_at: string
   updated_at: string
 }

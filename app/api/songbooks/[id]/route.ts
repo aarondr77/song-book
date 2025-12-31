@@ -52,11 +52,12 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const { title, description } = body
+    const { title, description, cover_image_url } = body
 
     const updateData: any = {}
     if (title !== undefined) updateData.title = title
     if (description !== undefined) updateData.description = description
+    if (cover_image_url !== undefined) updateData.cover_image_url = cover_image_url
 
     const { data, error } = await supabase
       .from('songbooks')

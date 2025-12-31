@@ -73,6 +73,15 @@ export default function SongbookViewPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
+      {songbook.cover_image_url && (
+        <div className="mb-6">
+          <img
+            src={songbook.cover_image_url}
+            alt={`${songbook.title} cover`}
+            className="w-full max-h-96 object-cover rounded-lg border border-gray-300"
+          />
+        </div>
+      )}
       <div className="mb-6 flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold mb-2">{songbook.title}</h1>
@@ -81,6 +90,12 @@ export default function SongbookViewPage() {
           )}
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => router.push('/')}
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+          >
+            Home
+          </button>
           <button
             onClick={handleShare}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"

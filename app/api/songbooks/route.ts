@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, description } = body
+    const { title, description, cover_image_url } = body
 
     if (!title) {
       return NextResponse.json(
@@ -15,7 +15,11 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('songbooks')
-      .insert([{ title, description: description || null }])
+      .insert([{ 
+        title, 
+        description: description || null,
+        cover_image_url: cover_image_url || null
+      }])
       .select()
       .single()
 

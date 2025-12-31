@@ -56,13 +56,24 @@ export default function Home() {
                   href={`/songbook/${songbook.id}`}
                   className="block p-6 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <h3 className="text-xl font-semibold mb-2">{songbook.title}</h3>
-                  {songbook.description && (
-                    <p className="text-gray-600 mb-2">{songbook.description}</p>
-                  )}
-                  <p className="text-sm text-gray-400">
-                    Created {new Date(songbook.created_at).toLocaleDateString()}
-                  </p>
+                  <div className="flex gap-4">
+                    {songbook.cover_image_url && (
+                      <img
+                        src={songbook.cover_image_url}
+                        alt={`${songbook.title} cover`}
+                        className="w-32 h-32 object-cover rounded-lg border border-gray-300 flex-shrink-0"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold mb-2">{songbook.title}</h3>
+                      {songbook.description && (
+                        <p className="text-gray-600 mb-2">{songbook.description}</p>
+                      )}
+                      <p className="text-sm text-gray-400">
+                        Created {new Date(songbook.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
                 </Link>
               ))}
             </div>
