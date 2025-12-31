@@ -454,7 +454,7 @@ export default function SongbookViewPage() {
                         />
                       </label>
                       <p className="text-xs text-gray-500 mt-2">
-                        Upload a video of you playing this song (max 1GB)
+                        Upload a video of you playing this song (max 2GB)
                       </p>
                     </div>
                   )}

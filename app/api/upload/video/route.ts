@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer } from '@/lib/supabase'
+import { VIDEO_FILE_SIZE_LIMIT, VIDEO_FILE_SIZE_LIMIT_GB } from '@/lib/storage-constants'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,11 +23,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file size (max 50MB)
-    const maxSize = 50 * 1024 * 1024 // 50MB
-    if (file.size > maxSize) {
+    // Validate file size
+    if (file.size > VIDEO_FILE_SIZE_LIMIT) {
       return NextResponse.json(
-        { error: 'File size must be less than 50MB' },
+        { error: `File size must be less than ${VIDEO_FILE_SIZE_LIMIT_GB}GB` },
         { status: 400 }
       )
     }
@@ -60,8 +60,17 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         )
       }
+      // Check for file size limit error (413 Payload Too Large)
+      const errorAny = error as any
+      if (error.message?.includes('exceeded the maximum allowed size') || errorAny.statusCode === '413' || errorAny.status === 413) {
+        const maxSizeGB = VIDEO_FILE_SIZE_LIMIT_GB ?? Math.round(VIDEO_FILE_SIZE_LIMIT / (1024 * 1024 * 1024))
+        return NextResponse.json(
+          { error: `File size exceeds the maximum allowed size. Please ensure the Supabase storage bucket is configured to allow files up to ${maxSizeGB}GB.` },
+          { status: 413 }
+        )
+      }
       // Check for RLS policy error
-      if (error.message?.includes('row-level security') || error.statusCode === '403') {
+      if (error.message?.includes('row-level security') || errorAny.statusCode === '403') {
         return NextResponse.json(
           { error: 'Storage access denied. Please set SUPABASE_SERVICE_ROLE_KEY in your environment variables, or configure storage bucket policies.' },
           { status: 500 }

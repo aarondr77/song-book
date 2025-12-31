@@ -61,7 +61,8 @@ port = 54324
 [storage]
 enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
-file_size_limit = "50MiB"
+# Note: This should match VIDEO_FILE_SIZE_LIMIT in lib/storage-constants.ts
+file_size_limit = "2GiB"
 
 [auth]
 enabled = true

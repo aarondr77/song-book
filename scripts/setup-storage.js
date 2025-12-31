@@ -1,6 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
+const { VIDEO_FILE_SIZE_LIMIT, IMAGE_FILE_SIZE_LIMIT } = require('../lib/storage-constants.js');
 
 // Load environment variables from .env.local
 const envPath = path.join(process.cwd(), '.env.local');
@@ -65,14 +66,14 @@ async function setup() {
   // Create songbook-covers bucket
   const coverBucket = await createBucket('songbook-covers', {
     public: true,
-    fileSizeLimit: 5242880, // 5MB
+    fileSizeLimit: IMAGE_FILE_SIZE_LIMIT,
     allowedMimeTypes: ['image/*']
   });
   
   // Create song-videos bucket
   const videoBucket = await createBucket('song-videos', {
     public: true,
-    fileSizeLimit: 52428800, // 50MB (Supabase free tier limit; increase if you have a paid plan)
+    fileSizeLimit: VIDEO_FILE_SIZE_LIMIT,
     allowedMimeTypes: ['video/mp4', 'video/mov', 'video/quicktime', 'video/webm', 'video/x-msvideo']
   });
   

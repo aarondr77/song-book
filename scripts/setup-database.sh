@@ -125,6 +125,7 @@ cat > /tmp/setup-storage.js << 'NODE_SCRIPT'
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
+const { VIDEO_FILE_SIZE_LIMIT, IMAGE_FILE_SIZE_LIMIT } = require(path.join(process.cwd(), 'lib/storage-constants.js'));
 
 // Load environment variables from .env.local
 const envPath = path.join(process.cwd(), '.env.local');
@@ -168,7 +169,7 @@ async function createBucket(name, public = false) {
     // Create bucket
     const { data, error } = await supabase.storage.createBucket(name, {
       public: public,
-      fileSizeLimit: name === 'song-videos' ? 1073741824 : 5242880, // 1GB for videos, 5MB for images
+      fileSizeLimit: name === 'song-videos' ? VIDEO_FILE_SIZE_LIMIT : IMAGE_FILE_SIZE_LIMIT,
       allowedMimeTypes: name === 'song-videos' 
         ? ['video/mp4', 'video/mov', 'video/quicktime', 'video/webm', 'video/x-msvideo']
         : ['image/*']
