@@ -1,1 +1,4 @@
-1. Let us upload videos to each song of us playing them. Makes it more than just a song book
+
+
+1. Play buttons in the non-playing state so dad knows to click on them
+2. Only play one song at a time. 

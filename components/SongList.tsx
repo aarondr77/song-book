@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SongbookSong } from '@/lib/types'
 
 interface SongListProps {
@@ -12,9 +12,21 @@ interface SongListProps {
 
 export default function SongList({ songs, onRemove, onReorder, onUpdateSong }: SongListProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
-  const [expandedSongs, setExpandedSongs] = useState<Set<string>>(new Set())
   const [editingText, setEditingText] = useState<Record<string, string>>({})
   const [uploadingVideo, setUploadingVideo] = useState<Record<string, boolean>>({})
+
+  // Initialize editing text for all songs
+  useEffect(() => {
+    const initialText: Record<string, string> = {}
+    songs.forEach(song => {
+      if (song.song_id && !editingText[song.song_id]) {
+        initialText[song.song_id] = song.song?.text || ''
+      }
+    })
+    if (Object.keys(initialText).length > 0) {
+      setEditingText(prev => ({ ...prev, ...initialText }))
+    }
+  }, [songs])
 
   const handleDragStart = (index: number) => {
     setDraggedIndex(index)
@@ -50,24 +62,6 @@ export default function SongList({ songs, onRemove, onReorder, onUpdateSong }: S
 
   const handleDragEnd = () => {
     setDraggedIndex(null)
-  }
-
-  const toggleExpand = (songId: string) => {
-    const newExpanded = new Set(expandedSongs)
-    if (newExpanded.has(songId)) {
-      newExpanded.delete(songId)
-    } else {
-      newExpanded.add(songId)
-      // Initialize editing text with current value
-      const song = songs.find(s => s.song_id === songId)
-      if (song && !editingText[songId]) {
-        setEditingText(prev => ({
-          ...prev,
-          [songId]: song.song?.text || ''
-        }))
-      }
-    }
-    setExpandedSongs(newExpanded)
   }
 
   const handleTextChange = (songId: string, text: string) => {
@@ -149,7 +143,6 @@ export default function SongList({ songs, onRemove, onReorder, onUpdateSong }: S
   return (
     <div className="space-y-2">
       {songs.map((songbookSong, index) => {
-        const isExpanded = expandedSongs.has(songbookSong.song_id)
         const songText = editingText[songbookSong.song_id] ?? songbookSong.song?.text ?? ''
         const isUploading = uploadingVideo[songbookSong.song_id] || false
 
@@ -182,12 +175,6 @@ export default function SongList({ songs, onRemove, onReorder, onUpdateSong }: S
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => toggleExpand(songbookSong.song_id)}
-                  className="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded text-sm"
-                >
-                  {isExpanded ? 'Collapse' : 'Edit'}
-                </button>
-                <button
                   onClick={() => onRemove(songbookSong.song_id)}
                   className="px-3 py-1 text-red-600 hover:bg-red-50 rounded text-sm"
                 >
@@ -196,71 +183,45 @@ export default function SongList({ songs, onRemove, onReorder, onUpdateSong }: S
               </div>
             </div>
 
-            {isExpanded && (
-              <div className="p-4 border-t border-gray-200 bg-gray-50 space-y-4">
-                {/* Text Editor */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Story / Notes (Markdown supported)
-                  </label>
-                  <textarea
-                    value={songText}
-                    onChange={(e) => handleTextChange(songbookSong.song_id, e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Write about your experiences playing this song together..."
-                    rows={6}
-                  />
-                  <button
-                    onClick={() => handleSaveText(songbookSong.song_id)}
-                    className="mt-2 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 text-sm"
-                  >
-                    Save Text
-                  </button>
-                </div>
+            <div className="p-4 border-t border-gray-200 bg-gray-50 space-y-4">
+              {/* Text Editor */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Story / Notes (Markdown supported)
+                </label>
+                <textarea
+                  value={songText}
+                  onChange={(e) => handleTextChange(songbookSong.song_id, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Write about your experiences playing this song together..."
+                  rows={6}
+                />
+                <button
+                  onClick={() => handleSaveText(songbookSong.song_id)}
+                  className="mt-2 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 text-sm"
+                >
+                  Save Text
+                </button>
+              </div>
 
-                {/* Video Upload */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Video
-                  </label>
-                  {songbookSong.song?.video_url ? (
-                    <div className="mb-2">
-                      <video
-                        src={songbookSong.song.video_url}
-                        controls
-                        className="w-full max-w-md rounded-lg"
-                        style={{ maxHeight: '300px' }}
-                      >
-                        Your browser does not support the video tag.
-                      </video>
-                      <div className="mt-2 flex gap-2">
-                        <label className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 cursor-pointer text-sm">
-                          {isUploading ? 'Uploading...' : 'Replace Video'}
-                          <input
-                            type="file"
-                            accept="video/*"
-                            onChange={(e) => handleVideoChange(songbookSong.song_id, e)}
-                            className="hidden"
-                            disabled={isUploading}
-                          />
-                        </label>
-                        <button
-                          onClick={async () => {
-                            if (onUpdateSong) {
-                              const text = editingText[songbookSong.song_id] || songbookSong.song?.text || ''
-                              await onUpdateSong(songbookSong.song_id, text, '')
-                            }
-                          }}
-                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 text-sm"
-                        >
-                          Remove Video
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <label className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 cursor-pointer inline-block text-sm">
-                        {isUploading ? 'Uploading...' : 'Upload Video'}
+              {/* Video Upload */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Video
+                </label>
+                {songbookSong.song?.video_url ? (
+                  <div className="mb-2">
+                    <video
+                      src={songbookSong.song.video_url}
+                      controls
+                      className="w-full max-w-md rounded-lg"
+                      style={{ maxHeight: '300px' }}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                    <div className="mt-2 flex gap-2">
+                      <label className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 cursor-pointer text-sm">
+                        {isUploading ? 'Uploading...' : 'Replace Video'}
                         <input
                           type="file"
                           accept="video/*"
@@ -269,14 +230,38 @@ export default function SongList({ songs, onRemove, onReorder, onUpdateSong }: S
                           disabled={isUploading}
                         />
                       </label>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Upload a video of you playing this song (max 2GB)
-                      </p>
+                      <button
+                        onClick={async () => {
+                          if (onUpdateSong) {
+                            const text = editingText[songbookSong.song_id] || songbookSong.song?.text || ''
+                            await onUpdateSong(songbookSong.song_id, text, '')
+                          }
+                        }}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 text-sm"
+                      >
+                        Remove Video
+                      </button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100 cursor-pointer inline-block text-sm">
+                      {isUploading ? 'Uploading...' : 'Upload Video'}
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => handleVideoChange(songbookSong.song_id, e)}
+                        className="hidden"
+                        disabled={isUploading}
+                      />
+                    </label>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Upload a video of you playing this song (max 2GB)
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         )
       })}
