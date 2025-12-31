@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation'
 import { SongbookSong } from '@/lib/types'
 import PrintView from '@/components/PrintView'
 import LoadingScreen from '@/components/LoadingScreen'
-import ReactMarkdown from 'react-markdown'
 
 export default function SongbookViewPage() {
   const params = useParams()
@@ -390,10 +389,8 @@ export default function SongbookViewPage() {
                     // View Mode
                     <div className="relative group">
                       {songbookSong.song?.text ? (
-                        <div className="text-gray-700 leading-relaxed prose prose-lg max-w-none">
-                          <ReactMarkdown>
-                            {songbookSong.song.text}
-                          </ReactMarkdown>
+                        <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+                          {songbookSong.song.text}
                         </div>
                       ) : (
                         <div className="text-gray-400 italic py-4">
