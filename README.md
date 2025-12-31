@@ -41,19 +41,25 @@ The app will be available at `http://localhost:3000` and Supabase Studio at `htt
    - Go to [supabase.com](https://supabase.com) and create a new project
    - Note your project reference ID
 
-2. **Link local project to remote**
+2. **Login to Supabase CLI**
    ```bash
-   supabase link --project-ref <your-project-ref>
+   npx supabase login
+   ```
+   This will open your browser to authenticate with Supabase.
+
+3. **Link local project to remote**
+   ```bash
+   npx supabase link --project-ref <your-project-ref>
    ```
    You'll be prompted to enter your database password.
 
-3. **Deploy database schema**
+4. **Deploy database schema**
    ```bash
-   supabase db push
+   npx supabase db push
    ```
    Or manually run `supabase/setup.sql` in the Supabase SQL Editor.
 
-4. **Set up storage buckets**
+5. **Set up storage buckets**
    - Get your production credentials from Supabase Dashboard → Settings → API
    - Update `.env.local` with production values:
      ```env

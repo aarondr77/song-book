@@ -22,11 +22,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file size (max 1GB)
-    const maxSize = 1024 * 1024 * 1024 // 1GB
+    // Validate file size (max 50MB)
+    const maxSize = 50 * 1024 * 1024 // 50MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'File size must be less than 1GB' },
+        { error: 'File size must be less than 50MB' },
         { status: 400 }
       )
     }
