@@ -15,6 +15,7 @@ export interface Songbook {
   cover_image_url: string | null
   created_at: string
   updated_at: string
+  song_count?: number
 }
 
 export interface SongbookSong {

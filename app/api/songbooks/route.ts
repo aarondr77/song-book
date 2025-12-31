@@ -80,21 +80,36 @@ export async function GET(request: NextRequest) {
         songs: songbookSongs || [],
       })
     } else {
-      // Get all songbooks
-      const { data, error } = await supabase
+      // Get all songbooks with song counts
+      const { data: songbooks, error: songbooksError } = await supabase
         .from('songbooks')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Error fetching songbooks:', error)
+      if (songbooksError) {
+        console.error('Error fetching songbooks:', songbooksError)
         return NextResponse.json(
           { error: 'Failed to fetch songbooks' },
           { status: 500 }
         )
       }
 
-      return NextResponse.json(data)
+      // Get song counts for each songbook
+      const songbooksWithCounts = await Promise.all(
+        (songbooks || []).map(async (songbook) => {
+          const { count, error: countError } = await supabase
+            .from('songbook_songs')
+            .select('*', { count: 'exact', head: true })
+            .eq('songbook_id', songbook.id)
+
+          return {
+            ...songbook,
+            song_count: countError ? 0 : (count || 0),
+          }
+        })
+      )
+
+      return NextResponse.json(songbooksWithCounts)
     }
   } catch (error) {
     console.error('Error:', error)

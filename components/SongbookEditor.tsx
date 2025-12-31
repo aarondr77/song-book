@@ -153,6 +153,22 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
     }
   }
 
+  const autoSave = async () => {
+    if (!songbookId || !title.trim()) return
+
+    try {
+      await fetch(`/api/songbooks/${songbookId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title, description, cover_image_url: coverImageUrl }),
+      })
+    } catch (err) {
+      console.error('Auto-save failed:', err)
+    }
+  }
+
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true)
     setError(null)
@@ -174,6 +190,11 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
       const data = await response.json()
       setCoverImageUrl(data.url)
       setCoverImagePreview(data.url)
+      
+      // Auto-save if in edit mode
+      if (songbookId) {
+        await autoSave()
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to upload image'
       setError(errorMessage)
@@ -209,9 +230,14 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
     }
   }
 
-  const handleRemoveImage = () => {
+  const handleRemoveImage = async () => {
     setCoverImageUrl(null)
     setCoverImagePreview(null)
+    
+    // Auto-save if in edit mode
+    if (songbookId) {
+      await autoSave()
+    }
   }
 
   const handleSave = async () => {
@@ -300,7 +326,16 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
           <input
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={async (e) => {
+              setTitle(e.target.value)
+              // Auto-save if in edit mode (debounced)
+              if (songbookId) {
+                clearTimeout((window as any).titleSaveTimeout)
+                ;(window as any).titleSaveTimeout = setTimeout(() => {
+                  autoSave()
+                }, 1000)
+              }
+            }}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Enter songbook title"
           />
@@ -310,7 +345,16 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
           <label className="block text-sm font-medium mb-2">Description</label>
           <textarea
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={async (e) => {
+              setDescription(e.target.value)
+              // Auto-save if in edit mode (debounced)
+              if (songbookId) {
+                clearTimeout((window as any).descriptionSaveTimeout)
+                ;(window as any).descriptionSaveTimeout = setTimeout(() => {
+                  autoSave()
+                }, 1000)
+              }
+            }}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Enter songbook description (optional)"
             rows={3}

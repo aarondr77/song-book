@@ -139,33 +139,44 @@ export async function POST(request: NextRequest) {
       song = newSong
     }
 
-    // If songbook_id is provided, add song to songbook
+    // If songbook_id is provided, add song to songbook (if not already added)
     if (songbook_id) {
-      // Get current max position
-      const { data: existingSongs } = await supabase
+      // Check if song already exists in this songbook
+      const { data: existingLink } = await supabase
         .from('songbook_songs')
-        .select('position')
+        .select('song_id')
         .eq('songbook_id', songbook_id)
-        .order('position', { ascending: false })
-        .limit(1)
+        .eq('song_id', song.id)
+        .single()
 
-      const nextPosition = existingSongs && existingSongs.length > 0
-        ? existingSongs[0].position + 1
-        : 0
+      // Only add if it doesn't already exist
+      if (!existingLink) {
+        // Get current max position
+        const { data: existingSongs } = await supabase
+          .from('songbook_songs')
+          .select('position')
+          .eq('songbook_id', songbook_id)
+          .order('position', { ascending: false })
+          .limit(1)
 
-      const { error: linkError } = await supabase
-        .from('songbook_songs')
-        .insert([
-          {
-            songbook_id,
-            song_id: song.id,
-            position: nextPosition,
-          },
-        ])
+        const nextPosition = existingSongs && existingSongs.length > 0
+          ? existingSongs[0].position + 1
+          : 0
 
-      if (linkError) {
-        console.error('Error linking song to songbook:', linkError)
-        // Don't fail the request, song was still saved
+        const { error: linkError } = await supabase
+          .from('songbook_songs')
+          .insert([
+            {
+              songbook_id,
+              song_id: song.id,
+              position: nextPosition,
+            },
+          ])
+
+        if (linkError) {
+          console.error('Error linking song to songbook:', linkError)
+          // Don't fail the request, song was still saved
+        }
       }
     }
 
