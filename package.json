@@ -11,7 +11,9 @@
     "supabase:init": "supabase init",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
-    "supabase:reset": "supabase db reset"
+    "supabase:reset": "supabase db reset",
+    "setup": "./scripts/setup-database.sh",
+    "create-video-bucket": "node scripts/create-video-bucket.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
@@ -20,6 +22,7 @@
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18.3.0",
+    "react-markdown": "^10.1.0",
     "supabase": "^2.70.5"
   },
   "devDependencies": {

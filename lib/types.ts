@@ -5,6 +5,8 @@ export interface Song {
   ultimate_guitar_id?: number | null
   ultimate_guitar_url?: string | null
   chords_data?: any | null
+  text?: string | null
+  video_url?: string | null
   created_at: string
 }
 

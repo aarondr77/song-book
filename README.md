@@ -1,73 +1,79 @@
 # Song Books
 
-A web application for creating, managing, and sharing songbooks with lyrics and guitar chords from Ultimate Guitar.
+A web application for creating and managing songbooks with chord charts and videos.
 
-## Quick Start (Local Development)
+## Development Setup
 
-For local testing, see [LOCAL_SETUP.md](LOCAL_SETUP.md) for detailed instructions.
+### Prerequisites
+- Node.js 18+
+- Docker Desktop
+- Supabase CLI (`npm install supabase`)
 
-**Easiest way to get started:**
+### Quick Start
 
-```bash
-# Run the setup script (requires Supabase CLI and Docker)
-./scripts/setup-local.sh
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-# Then follow the instructions it prints
-```
+2. **Set up local Supabase**
+   ```bash
+   npm run setup
+   ```
+   This will:
+   - Start local Supabase (via Docker)
+   - Create database schema from `supabase/setup.sql`
+   - Create storage buckets (`songbook-covers` and `song-videos`)
+   - Configure `.env.local` with credentials
 
-**Manual setup:**
-1. Install Supabase CLI locally: `npm install supabase` (already done!)
-2. Start local Supabase: `npm run supabase:start` (copy the API URL and keys)
-3. Create `.env.local` with the local Supabase credentials
-4. Run migration: `npm run supabase:reset`
-5. Start Next.js: `npm run dev`
+3. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
-## Production Setup
+The app will be available at `http://localhost:3000` and Supabase Studio at `http://localhost:54323`.
 
-1. Install dependencies:
-```bash
-npm install
-```
+## Production Deployment
 
-2. Set up environment variables:
-```bash
-cp .env.local.example .env.local
-```
+### Deploy Supabase
 
-Fill in your Supabase credentials.
+1. **Create a Supabase project**
+   - Go to [supabase.com](https://supabase.com) and create a new project
+   - Note your project reference ID
 
-3. Run the development server:
-```bash
-npm run dev
-```
+2. **Link local project to remote**
+   ```bash
+   supabase link --project-ref <your-project-ref>
+   ```
+   You'll be prompted to enter your database password.
+
+3. **Deploy database schema**
+   ```bash
+   supabase db push
+   ```
+   Or manually run `supabase/setup.sql` in the Supabase SQL Editor.
+
+4. **Set up storage buckets**
+   - Get your production credentials from Supabase Dashboard → Settings → API
+   - Update `.env.local` with production values:
+     ```env
+     NEXT_PUBLIC_SUPABASE_URL=https://<your-project-ref>.supabase.co
+     NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+     SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+     ```
+   - Run the storage setup script:
+     ```bash
+     node scripts/setup-storage.js
+     ```
+
+### Deploy Application
+
+TODO: Add hosting instructions (Vercel, etc.)
 
 ## Project Structure
 
-- `app/` - Next.js app router pages
+- `supabase/setup.sql` - Complete database schema
+- `scripts/setup-storage.js` - Creates storage buckets programmatically
+- `app/` - Next.js application routes
 - `components/` - React components
-- `lib/` - Utility functions and types
-- `supabase/migrations/` - Database migrations
-
-## Database Setup
-
-1. Create a Supabase project at https://supabase.com
-2. Run the migration in `supabase/migrations/001_initial_schema.sql` in the Supabase SQL editor
-3. Copy your Supabase URL and anon key from the project settings
-
-## Deployment
-
-### Next.js App (Vercel or Railway)
-
-1. Deploy to Vercel:
-   - Connect your GitHub repository to Vercel
-   - Set environment variables:
-     - `NEXT_PUBLIC_SUPABASE_URL`
-     - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - Deploy
-
-2. Or deploy to Railway:
-   - Create a new service in your Railway project
-   - Select the root directory
-   - Set the same environment variables
-   - Deploy
 

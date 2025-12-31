@@ -1,3 +1,6 @@
+-- Complete Database Setup for Song Books
+-- This file contains the full schema including all features
+
 -- Create songs table
 CREATE TABLE IF NOT EXISTS songs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -6,6 +9,8 @@ CREATE TABLE IF NOT EXISTS songs (
   ultimate_guitar_id INTEGER,
   ultimate_guitar_url TEXT,
   chords_data JSONB,
+  text TEXT,
+  video_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -14,6 +19,7 @@ CREATE TABLE IF NOT EXISTS songbooks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   description TEXT,
+  cover_image_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -42,6 +48,7 @@ END;
 $$ language 'plpgsql';
 
 -- Create trigger to automatically update updated_at
+DROP TRIGGER IF EXISTS update_songbooks_updated_at ON songbooks;
 CREATE TRIGGER update_songbooks_updated_at BEFORE UPDATE ON songbooks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { SongbookSong } from '@/lib/types'
 import PrintView from '@/components/PrintView'
 import LoadingScreen from '@/components/LoadingScreen'
+import ReactMarkdown from 'react-markdown'
 
 export default function SongbookViewPage() {
   const params = useParams()
@@ -15,6 +16,10 @@ export default function SongbookViewPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showPrintView, setShowPrintView] = useState(false)
+  const [editingSongId, setEditingSongId] = useState<string | null>(null)
+  const [editingText, setEditingText] = useState<Record<string, string>>({})
+  const [saving, setSaving] = useState<Record<string, boolean>>({})
+  const [uploadingVideo, setUploadingVideo] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     loadSongbook()
@@ -50,6 +55,181 @@ export default function SongbookViewPage() {
     })
   }
 
+  const handleStartEdit = (songId: string, currentText: string) => {
+    setEditingSongId(songId)
+    setEditingText(prev => ({
+      ...prev,
+      [songId]: currentText || ''
+    }))
+  }
+
+  const handleCancelEdit = (songId: string) => {
+    setEditingSongId(null)
+    setEditingText(prev => {
+      const newState = { ...prev }
+      delete newState[songId]
+      return newState
+    })
+  }
+
+  const handleSaveText = async (songId: string) => {
+    // Find the song by matching the songId (which is song.id)
+    const songbookSong = songbook.songs?.find((s: SongbookSong) => 
+      s.song?.id === songId || s.song_id === songId
+    )
+
+    if (!songbookSong?.song?.id) {
+      alert('Cannot save: Song ID not found')
+      return
+    }
+
+    setSaving(prev => ({ ...prev, [songId]: true }))
+    
+    try {
+      const text = editingText[songId] || ''
+      const currentVideoUrl = songbookSong.song?.video_url || ''
+
+      const response = await fetch(`/api/songs/${songbookSong.song.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text, video_url: currentVideoUrl }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update song')
+      }
+
+      // Clear editing state before reload
+      setEditingSongId(null)
+      setEditingText(prev => {
+        const newState = { ...prev }
+        delete newState[songId]
+        return newState
+      })
+
+      // Reload songbook to get updated data
+      await loadSongbook()
+    } catch (err) {
+      console.error('Error updating song:', err)
+      alert('Failed to save changes. Please try again.')
+    } finally {
+      setSaving(prev => ({ ...prev, [songId]: false }))
+    }
+  }
+
+  const handleVideoUpload = async (songId: string, file: File) => {
+    // Find the song to get the actual song ID
+    const songbookSong = songbook.songs?.find((s: SongbookSong) => 
+      s.song?.id === songId || s.song_id === songId
+    )
+
+    // Get the actual song ID for the API call
+    const actualSongId = songbookSong?.song?.id || songbookSong?.song_id
+
+    if (!songbookSong || !actualSongId) {
+      alert('Cannot upload video: Song ID not found')
+      return
+    }
+
+    setUploadingVideo(prev => ({ ...prev, [songId]: true }))
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload/video', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to upload video')
+      }
+
+      const data = await response.json()
+      const text = editingText[songId] || songbookSong.song?.text || ''
+      
+      // Update the song with the new video URL using the actual song ID
+      const updateResponse = await fetch(`/api/songs/${actualSongId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text, video_url: data.url }),
+      })
+
+      if (!updateResponse.ok) {
+        throw new Error('Failed to update song with video URL')
+      }
+
+      // Reload songbook to get updated data
+      await loadSongbook()
+    } catch (err) {
+      console.error('Error uploading video:', err)
+      alert(err instanceof Error ? err.message : 'Failed to upload video')
+    } finally {
+      setUploadingVideo(prev => ({ ...prev, [songId]: false }))
+    }
+  }
+
+  const handleVideoChange = (songId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      const validVideoTypes = ['video/mp4', 'video/mov', 'video/quicktime', 'video/webm', 'video/x-msvideo']
+      if (!validVideoTypes.includes(file.type)) {
+        alert('Please select a video file (mp4, mov, webm, avi)')
+        return
+      }
+
+      // Validate file size (1GB)
+      if (file.size > 1024 * 1024 * 1024) {
+        alert('Video size must be less than 1GB')
+        return
+      }
+
+      handleVideoUpload(songId, file)
+    }
+  }
+
+  const handleRemoveVideo = async (songId: string) => {
+    const songbookSong = songbook.songs?.find((s: SongbookSong) => 
+      s.song?.id === songId || s.song_id === songId
+    )
+
+    // Get the actual song ID for the API call
+    const actualSongId = songbookSong?.song?.id || songbookSong?.song_id
+
+    if (!songbookSong || !actualSongId) {
+      alert('Cannot remove video: Song ID not found')
+      return
+    }
+
+    try {
+      const text = editingText[songId] || songbookSong.song?.text || ''
+      
+      const response = await fetch(`/api/songs/${actualSongId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text, video_url: '' }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to remove video')
+      }
+
+      await loadSongbook()
+    } catch (err) {
+      console.error('Error removing video:', err)
+      alert('Failed to remove video. Please try again.')
+    }
+  }
+
   if (loading) {
     return <LoadingScreen />
   }
@@ -60,7 +240,7 @@ export default function SongbookViewPage() {
         <p className="text-red-600">{error || 'Songbook not found'}</p>
         <button
           onClick={() => router.push('/')}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg"
+          className="mt-4 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
         >
           Go Home
         </button>
@@ -81,7 +261,7 @@ export default function SongbookViewPage() {
             {/* Home Button */}
             <button
               onClick={() => router.push('/')}
-              className="mb-6 w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+              className="mb-6 w-full px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm"
             >
               ← Home
             </button>
@@ -110,23 +290,23 @@ export default function SongbookViewPage() {
               </p>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons - Minimal Styling */}
             <div className="space-y-2">
               <button
                 onClick={handleShare}
-                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm"
               >
                 Share Link
               </button>
               <button
                 onClick={handlePrint}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm"
               >
                 Print
               </button>
               <button
                 onClick={() => router.push(`/songbook/${id}/edit`)}
-                className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm"
               >
                 Edit
               </button>
@@ -134,50 +314,159 @@ export default function SongbookViewPage() {
           </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 max-w-4xl mx-auto px-6 py-8 lg:px-12">
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4">Table of Contents</h2>
-            <ol className="list-decimal list-inside space-y-2">
-              {songbook.songs?.map((songbookSong: SongbookSong, index: number) => (
-                <li key={songbookSong.song_id} className="text-lg">
-                  {songbookSong.song?.title || `Song ${index + 1}`} -{' '}
-                  {songbookSong.song?.artist || 'Unknown Artist'}
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          <div className="space-y-12">
-            {songbook.songs?.map((songbookSong: SongbookSong, index: number) => (
-              <div key={songbookSong.song_id} className="page-break">
-                <div className="mb-4">
-                  <h2 className="text-2xl font-bold">
-                    {songbookSong.song?.title || `Song ${index + 1}`}
-                  </h2>
-                  <p className="text-lg text-gray-600">
+        {/* Main Content - Blog Style */}
+        <main className="flex-1 max-w-3xl mx-auto px-6 py-12 lg:px-16">
+          {/* Blog Post Style Content */}
+          <div className="space-y-16">
+            {songbook.songs?.map((songbookSong: SongbookSong, index: number) => {
+              // Use song.id as the primary identifier (it's the actual song UUID)
+              const songId = songbookSong.song?.id || songbookSong.song_id
+              if (!songId) return null // Skip if no valid ID
+              
+              const isEditing = editingSongId === songId
+              const isLastSong = index === (songbook.songs?.length || 0) - 1
+              
+              return (
+                <article key={songId} className="prose prose-lg max-w-none">
+                {/* Song Title as Header */}
+                <header className="mb-6">
+                  <div className="flex items-baseline gap-4 mb-2">
+                    <h1 className="text-4xl font-bold text-gray-900 m-0">
+                      {songbookSong.song?.title || 'Untitled Song'}
+                    </h1>
+                    {songbookSong.song?.ultimate_guitar_url && (
+                      <a
+                        href={songbookSong.song.ultimate_guitar_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-gray-500 hover:text-gray-700 underline whitespace-nowrap"
+                      >
+                        View on Ultimate Guitar →
+                      </a>
+                    )}
+                  </div>
+                  <p className="text-xl text-gray-600 m-0">
                     {songbookSong.song?.artist || 'Unknown Artist'}
                   </p>
+                </header>
+
+                {/* Markdown Text Content */}
+                <div className="mb-8">
+                  {isEditing ? (
+                    // Edit Mode
+                    <div className="space-y-3">
+                      <textarea
+                        key={`textarea-${songId}`}
+                        value={editingText[songId] ?? ''}
+                        onChange={(e) => {
+                          const newValue = e.target.value
+                          setEditingText(prev => ({
+                            ...prev,
+                            [songId]: newValue
+                          }))
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 font-mono text-sm"
+                        placeholder="Write your story about this song in Markdown..."
+                        rows={12}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleSaveText(songId)}
+                          disabled={saving[songId]}
+                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
+                        >
+                          {saving[songId] ? 'Saving...' : 'Save'}
+                        </button>
+                        <button
+                          onClick={() => handleCancelEdit(songId)}
+                          disabled={saving[songId]}
+                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // View Mode
+                    <div className="relative group">
+                      {songbookSong.song?.text ? (
+                        <div className="text-gray-700 leading-relaxed prose prose-lg max-w-none">
+                          <ReactMarkdown>
+                            {songbookSong.song.text}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <div className="text-gray-400 italic py-4">
+                          No story written yet. Click Edit to add one.
+                        </div>
+                      )}
+                      <button
+                        onClick={() => handleStartEdit(songId, songbookSong.song?.text || '')}
+                        className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 text-xs border border-gray-300 text-gray-600 rounded hover:bg-gray-50 bg-white"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {songbookSong.song?.ultimate_guitar_url ? (
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <p className="text-sm text-gray-600 mb-2">View on Ultimate Guitar:</p>
-                    <a
-                      href={songbookSong.song.ultimate_guitar_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 underline break-all"
-                    >
-                      {songbookSong.song.ultimate_guitar_url}
-                    </a>
-                  </div>
-                ) : (
-                  <div className="bg-gray-50 p-4 rounded-lg text-gray-500">
-                    No URL available
-                  </div>
+
+                {/* Video Player */}
+                <div className="mb-8">
+                  {songbookSong.song?.video_url ? (
+                    <div>
+                      <video
+                        src={songbookSong.song.video_url}
+                        controls
+                        className="w-full rounded-lg shadow-sm"
+                        style={{ maxHeight: '600px' }}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                      <div className="mt-2 flex gap-2">
+                        <label className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 cursor-pointer text-sm">
+                          {uploadingVideo[songId] ? 'Uploading...' : 'Replace Video'}
+                          <input
+                            type="file"
+                            accept="video/*"
+                            onChange={(e) => handleVideoChange(songId, e)}
+                            className="hidden"
+                            disabled={uploadingVideo[songId]}
+                          />
+                        </label>
+                        <button
+                          onClick={() => handleRemoveVideo(songId)}
+                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 text-sm"
+                        >
+                          Remove Video
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 cursor-pointer inline-block text-sm">
+                        {uploadingVideo[songId] ? 'Uploading...' : 'Upload Video'}
+                        <input
+                          type="file"
+                          accept="video/*"
+                          onChange={(e) => handleVideoChange(songId, e)}
+                          className="hidden"
+                          disabled={uploadingVideo[songId]}
+                        />
+                      </label>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Upload a video of you playing this song (max 1GB)
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Divider between songs */}
+                {!isLastSong && (
+                  <hr className="border-gray-200 my-16" />
                 )}
-              </div>
-            ))}
+                </article>
+              )
+            })}
           </div>
         </main>
       </div>

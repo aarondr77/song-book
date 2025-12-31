@@ -240,6 +240,47 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
     }
   }
 
+  const handleUpdateSong = async (songId: string, text: string, videoUrl: string) => {
+    try {
+      const response = await fetch(`/api/songs/${songId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text, video_url: videoUrl }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update song')
+      }
+
+      // Reload songbook to get updated data
+      if (songbookId) {
+        await loadSongbook()
+      } else {
+        // Update local state for new songbooks
+        setSongs(prevSongs =>
+          prevSongs.map(songbookSong => {
+            if (songbookSong.song_id === songId) {
+              return {
+                ...songbookSong,
+                song: {
+                  ...songbookSong.song!,
+                  text,
+                  video_url: videoUrl,
+                },
+              }
+            }
+            return songbookSong
+          })
+        )
+      }
+    } catch (err) {
+      console.error('Error updating song:', err)
+      setError('Failed to update song')
+    }
+  }
+
   const handleSave = async () => {
     if (!title.trim()) {
       setError('Title is required')
@@ -423,6 +464,7 @@ export default function SongbookEditor({ songbookId }: SongbookEditorProps) {
           songs={songs}
           onRemove={handleRemoveSong}
           onReorder={handleReorder}
+          onUpdateSong={handleUpdateSong}
         />
       </div>
 
