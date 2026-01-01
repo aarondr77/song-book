@@ -28,24 +28,35 @@ export default function SongList({ songs, onRemove, onReorder, onUpdateSong }: S
     }
   }, [songs])
 
+  const [localSongs, setLocalSongs] = useState<SongbookSong[]>(songs)
+
+  useEffect(() => {
+    setLocalSongs(songs)
+  }, [songs])
+
   const handleDragStart = (index: number) => {
     setDraggedIndex(index)
   }
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault()
-    if (draggedIndex === null) return
-
+    e.stopPropagation()
     if (draggedIndex === null) return
 
     if (draggedIndex !== index) {
-      const newSongs = [...songs]
+      const newSongs = [...localSongs]
       const draggedSong = newSongs[draggedIndex]
       newSongs.splice(draggedIndex, 1)
       newSongs.splice(index, 0, draggedSong)
-      
+      setLocalSongs(newSongs)
+      setDraggedIndex(index)
+    }
+  }
+
+  const handleDragEnd = () => {
+    if (draggedIndex !== null) {
       // Filter out any songs without a valid song_id and create reordered array
-      const reordered = newSongs
+      const reordered = localSongs
         .filter((song) => song.song_id != null && song.song_id !== '')
         .map((song, idx) => ({
           song_id: song.song_id,
@@ -56,11 +67,7 @@ export default function SongList({ songs, onRemove, onReorder, onUpdateSong }: S
       if (reordered.length > 0) {
         onReorder(reordered)
       }
-      setDraggedIndex(index)
     }
-  }
-
-  const handleDragEnd = () => {
     setDraggedIndex(null)
   }
 
@@ -142,7 +149,7 @@ export default function SongList({ songs, onRemove, onReorder, onUpdateSong }: S
 
   return (
     <div className="space-y-2">
-      {songs.map((songbookSong, index) => {
+      {localSongs.map((songbookSong, index) => {
         const songText = editingText[songbookSong.song_id] ?? songbookSong.song?.text ?? ''
         const isUploading = uploadingVideo[songbookSong.song_id] || false
 
@@ -155,12 +162,19 @@ export default function SongList({ songs, onRemove, onReorder, onUpdateSong }: S
           >
             <div
               draggable
-              onDragStart={() => handleDragStart(index)}
+              onDragStart={(e) => {
+                handleDragStart(index)
+                e.dataTransfer.effectAllowed = 'move'
+              }}
               onDragOver={(e) => handleDragOver(e, index)}
+              onDrop={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
               onDragEnd={handleDragEnd}
               className={`p-4 flex items-center justify-between ${
-                draggedIndex === index ? '' : 'hover:bg-gray-50'
-              } cursor-move`}
+                draggedIndex === index ? 'opacity-50' : 'hover:bg-gray-50'
+              } cursor-move select-none`}
             >
               <div className="flex items-center gap-4 flex-1">
                 <div className="text-gray-400 text-sm">⋮⋮</div>
@@ -183,7 +197,11 @@ export default function SongList({ songs, onRemove, onReorder, onUpdateSong }: S
               </div>
             </div>
 
-            <div className="p-4 border-t border-gray-200 bg-gray-50 space-y-4">
+            <div 
+              className="p-4 border-t border-gray-200 bg-gray-50 space-y-4"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => e.preventDefault()}
+            >
               {/* Text Editor */}
               <div>
                 <label className="block text-sm font-medium mb-2">
