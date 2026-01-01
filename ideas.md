@@ -1,4 +1,1 @@
-
-
-1. Play buttons in the non-playing state so dad knows to click on them
-2. Only play one song at a time. 
+3. Fix aspect ratio of videos (especially vertical ones)

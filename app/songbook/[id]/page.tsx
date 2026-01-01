@@ -14,6 +14,7 @@ export default function SongbookViewPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [hoveredVideoId, setHoveredVideoId] = useState<string | null>(null)
+  const [playingVideoIds, setPlayingVideoIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadSongbook()
@@ -204,9 +205,55 @@ export default function SongbookViewPage() {
                             objectFit: 'cover',
                             display: 'block',
                           }}
+                          onPlay={(e) => {
+                            // Pause all other videos
+                            const allVideos = document.querySelectorAll('video')
+                            allVideos.forEach((video) => {
+                              if (video !== e.currentTarget && !video.paused) {
+                                video.pause()
+                              }
+                            })
+                            setPlayingVideoIds(prev => new Set([songId]))
+                          }}
+                          onPause={() => {
+                            setPlayingVideoIds(prev => {
+                              const next = new Set(prev)
+                              next.delete(songId)
+                              return next
+                            })
+                          }}
+                          onEnded={() => {
+                            setPlayingVideoIds(prev => {
+                              const next = new Set(prev)
+                              next.delete(songId)
+                              return next
+                            })
+                          }}
                         >
                           Your browser does not support the video tag.
                         </video>
+                        {!playingVideoIds.has(songId) && (
+                          <div 
+                            className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 cursor-pointer z-20 rounded-xl"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              const video = e.currentTarget.previousElementSibling as HTMLVideoElement
+                              if (video) {
+                                video.play()
+                              }
+                            }}
+                          >
+                            <div className="w-20 h-20 bg-white bg-opacity-90 rounded-full flex items-center justify-center shadow-lg hover:bg-opacity-100 transition-all">
+                              <svg 
+                                className="w-10 h-10 text-gray-900 ml-1" 
+                                fill="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
